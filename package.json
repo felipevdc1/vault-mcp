@@ -1,0 +1,30 @@
+{
+  "name": "vault-mcp",
+  "version": "0.1.0",
+  "description": "Intelligent skill resolver for Claude Code — discover, compose, and evolve your AI toolkit.",
+  "type": "module",
+  "main": "src/server.mjs",
+  "bin": {
+    "vault-mcp": "./bin/vault-mcp.mjs"
+  },
+  "scripts": {
+    "start": "node src/server.mjs",
+    "serve": "node bin/vault-mcp.mjs serve",
+    "scan": "node bin/vault-mcp.mjs scan",
+    "test": "node --test tests/"
+  },
+  "author": {
+    "name": "Felipe Vieira Domingues Carneiro",
+    "url": "https://instagram.com/o.felipecarneiro"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.0",
+    "zod": "^3.25.0",
+    "js-yaml": "^4.1.0"
+  },
+  "keywords": ["mcp", "claude-code", "skills", "resolver", "ai-toolkit"]
+}

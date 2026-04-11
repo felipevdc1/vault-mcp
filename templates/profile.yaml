@@ -1,0 +1,14 @@
+# vault-mcp project profile
+# Place as .vault-profile.yaml in your project root
+
+project: ""          # Project name
+stack: []            # Tech stack (e.g., [next.js, supabase, typescript])
+domains: []          # Skill domains relevant to this project
+
+# Skills to auto-load when opening this project
+auto_load:
+  squads: []         # Full squads to activate
+  skills: []         # Individual skills to activate
+
+# Recipes to prioritize for this project
+recipes: []

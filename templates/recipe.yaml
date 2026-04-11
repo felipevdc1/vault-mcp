@@ -1,0 +1,16 @@
+# vault-mcp recipe
+# Defines a combination of skills for a common task
+
+name: ""            # Recipe name
+author: ""          # Author
+what: ""            # What this recipe achieves
+when: ""            # When to use this combo
+
+# Skills that compose this recipe (in order)
+skills: []
+  # - id: squad:type:name
+  #   role: "What this skill contributes to the recipe"
+
+# Suggested execution order
+workflow_hint: ""
+  # e.g., "1. Research → 2. Design → 3. Implement → 4. Validate"
