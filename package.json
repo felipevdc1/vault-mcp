@@ -29,12 +29,12 @@
   "keywords": ["mcp", "claude-code", "skills", "resolver", "ai-toolkit"],
   "repository": {
     "type": "git",
-    "url": "https://github.com/felipevdc/vault-mcp"
+    "url": "https://github.com/felipevdc1/vault-mcp"
   },
   "bugs": {
-    "url": "https://github.com/felipevdc/vault-mcp/issues"
+    "url": "https://github.com/felipevdc1/vault-mcp/issues"
   },
-  "homepage": "https://github.com/felipevdc/vault-mcp#readme",
+  "homepage": "https://github.com/felipevdc1/vault-mcp#readme",
   "files": [
     "bin/",
     "src/",

@@ -18,7 +18,7 @@
 Clone the repository and link globally:
 
 ```bash
-git clone https://github.com/felipevdc/vault-mcp
+git clone https://github.com/felipevdc1/vault-mcp
 cd vault-mcp
 npm link
 ```

@@ -161,8 +161,8 @@ Restart Claude Code to activate the vault tools.
 
 vault-mcp works standalone, but plays nicer with friends:
 
-- **[MemPalace](https://github.com/felipevdc/mempalace)** *(recommended)* — Cross-session memory. Vault remembers which skills worked for each project and boosts them in future sessions.
-- **[codebase-memory-mcp](https://github.com/felipevdc/codebase-memory-mcp)** *(optional)* — Stack-aware resolution. Vault reads your project's tech stack and prioritizes matching skills automatically.
+- **MemPalace** *(recommended)* — Cross-session memory. Vault remembers which skills worked for each project and boosts them in future sessions.
+- **codebase-memory-mcp** *(optional)* — Stack-aware resolution. Vault reads your project's tech stack and prioritizes matching skills automatically.
 
 Not installed? Vault auto-detects what's missing and tells you.
 
@@ -195,7 +195,7 @@ Read [CONTRIBUTING.md](./CONTRIBUTING.md) for the full guide.
 Built by **Felipe Vieira Domingues Carneiro** in Brazil 🇧🇷
 
 - Instagram: [@o.felipecarneiro](https://instagram.com/o.felipecarneiro)
-- GitHub: [@felipevdc](https://github.com/felipevdc)
+- GitHub: [@felipevdc1](https://github.com/felipevdc1)
 
 ---
 
