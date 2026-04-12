@@ -23,10 +23,16 @@ cd vault-mcp
 npm link
 ```
 
-### Option B: npm (once published)
+### Option B: npm
 
 ```bash
-npm install -g vault-mcp
+npm install -g @felipevdc1/vault-mcp
+```
+
+Or run without install:
+
+```bash
+npx @felipevdc1/vault-mcp init
 ```
 
 ---

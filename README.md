@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/vault-mcp"><img src="https://img.shields.io/npm/v/vault-mcp?style=flat-square&color=cb0000" alt="npm"></a>
+  <a href="https://www.npmjs.com/package/@felipevdc1/vault-mcp"><img src="https://img.shields.io/npm/v/@felipevdc1/vault-mcp?style=flat-square&color=cb0000" alt="npm"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT License"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen?style=flat-square" alt="Node ≥18"></a>
   <a href="https://modelcontextprotocol.io"><img src="https://img.shields.io/badge/MCP-compatible-8b5cf6?style=flat-square" alt="MCP"></a>
@@ -59,7 +59,7 @@ You never thought about which skills to use. The vault did it for you.
 ## Quick Start
 
 ```bash
-npx vault-mcp init
+npx @felipevdc1/vault-mcp init
 ```
 
 That's it. 30 seconds. Restart Claude Code — done.
@@ -122,7 +122,7 @@ Every skill gets a **manifest** — structured metadata Claude uses to score rel
 ## Installation
 
 ```bash
-npx vault-mcp init
+npx @felipevdc1/vault-mcp init
 ```
 
 The `init` command:
