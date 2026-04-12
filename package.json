@@ -1,6 +1,6 @@
 {
   "name": "@felipevdc1/vault-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Intelligent skill resolver for Claude Code — discover, compose, and evolve your AI toolkit.",
   "type": "module",
   "main": "src/server.mjs",
@@ -26,7 +26,13 @@
     "zod": "^3.25.0",
     "js-yaml": "^4.1.0"
   },
-  "keywords": ["mcp", "claude-code", "skills", "resolver", "ai-toolkit"],
+  "keywords": [
+    "mcp",
+    "claude-code",
+    "skills",
+    "resolver",
+    "ai-toolkit"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/felipevdc1/vault-mcp"
