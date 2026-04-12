@@ -26,5 +26,20 @@
     "zod": "^3.25.0",
     "js-yaml": "^4.1.0"
   },
-  "keywords": ["mcp", "claude-code", "skills", "resolver", "ai-toolkit"]
+  "keywords": ["mcp", "claude-code", "skills", "resolver", "ai-toolkit"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/felipevdc/vault-mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/felipevdc/vault-mcp/issues"
+  },
+  "homepage": "https://github.com/felipevdc/vault-mcp#readme",
+  "files": [
+    "bin/",
+    "src/",
+    "templates/",
+    "README.md",
+    "LICENSE"
+  ]
 }
