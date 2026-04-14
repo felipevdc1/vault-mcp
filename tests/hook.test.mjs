@@ -103,3 +103,38 @@ test('hook: under 800ms (500ms budget + 300ms node startup slack)', () => {
   const elapsed = Date.now() - start;
   assert.ok(elapsed < 800, `hook took ${elapsed}ms (budget 500ms + 300ms slack)`);
 });
+
+test('hook: stderr contains [vault] visibility line with shape-only assertions', () => {
+  // Use synthetic catalog so the match path is guaranteed
+  const home = mkdtempSync(path.join(tmpdir(), 'vault-hook-stderr-'));
+  mkdirSync(path.join(home, '.claude', 'vault'), { recursive: true });
+
+  const catalog = {
+    generated: new Date().toISOString(),
+    assets: [
+      {
+        id: 'test-squad:skill:visiblekeyword456',
+        name: 'visiblekeyword456',
+        type: 'skill',
+        squad: 'test-squad',
+        tags: ['visiblekeyword456'],
+        summary: { what: 'test skill for stderr visibility test', when: '', delivers: '' },
+        path: '/tmp/fake-visible.md',
+      },
+    ],
+    recipes: [],
+  };
+  writeFileSync(path.join(home, '.claude', 'vault', 'catalog.json'), JSON.stringify(catalog));
+
+  const { code, stderr } = runHook(
+    { prompt: 'visiblekeyword456 task' },
+    { HOME: home }
+  );
+
+  assert.strictEqual(code, 0, 'hook must exit 0');
+  assert.ok(stderr.includes('[vault]'), 'stderr must contain [vault]');
+  assert.ok(
+    stderr.includes(' matches ') || stderr.includes('no matches ') || stderr.includes('error:'),
+    `stderr must contain a status phrase, got: ${stderr.trim()}`
+  );
+});

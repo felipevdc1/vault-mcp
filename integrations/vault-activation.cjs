@@ -49,6 +49,10 @@ function taskHash(task) {
   return crypto.createHash('sha1').update(task).digest('hex').slice(0, 8);
 }
 
+function writeVisible(line) {
+  process.stderr.write(`\x1b[2m[vault]\x1b[0m ${line}\n`);
+}
+
 function checkOptOut() {
   // Env var opt-out
   if (process.env.VAULT_MCP_AUTO_INJECT === '0') return true;
@@ -150,17 +154,25 @@ function formatOutput(prompt, matches, recipe, latencyMs) {
 
     // No matches = silent exit (no spam)
     if (!result.matches || result.matches.length === 0) {
+      writeVisible(`no matches (${latencyMs}ms)`);
       clearTimeout(hardTimeout);
       process.exit(0);
     }
 
     // Output activation block to stdout
+    const top3Names = result.matches.slice(0, 3).map(m => m.id);
+    const count = result.matches.length;
+    const recipeSuffix = result.recipe && (result.recipe.name || result.recipe)
+      ? ` | recipe: ${result.recipe.name || result.recipe}`
+      : '';
+    writeVisible(`${count} matches (${latencyMs}ms) → ${top3Names.join(', ')}${recipeSuffix}`);
     const output = formatOutput(prompt, result.matches, result.recipe, latencyMs);
     process.stdout.write(output + '\n');
 
     clearTimeout(hardTimeout);
     process.exit(0);
   } catch (err) {
+    writeVisible(`error: ${err.message?.slice(0, 80) ?? 'unknown'}`);
     appendLog({ status: 'error', task_hash: taskHash8, matches_count: 0, latency_ms: Date.now() - startMs, error: err.message });
     clearTimeout(hardTimeout);
     process.exit(0);

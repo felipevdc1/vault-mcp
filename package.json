@@ -1,6 +1,6 @@
 {
   "name": "@felipevdc1/vault-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Intelligent skill resolver for Claude Code — discover, compose, and evolve your AI toolkit.",
   "type": "module",
   "main": "src/server.mjs",
