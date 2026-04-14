@@ -247,7 +247,7 @@ async function cmdInit() {
     if (!alreadyRegistered) {
       settingsJson.hooks.UserPromptSubmit.push({
         matcher: '',
-        hooks: [{ type: 'command', command: `node ${HOOK_PATH}` }],
+        hooks: [{ type: 'command', command: `node '${HOOK_PATH}'` }],
       });
       fs.writeFileSync(SETTINGS_JSON_PATH, JSON.stringify(settingsJson, null, 2));
       console.log(green('  registered') + ' UserPromptSubmit hook in ~/.claude/settings.json');

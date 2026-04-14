@@ -4,6 +4,7 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -562,7 +563,7 @@ export async function startServer() {
 // Auto-start when run directly
 // ---------------------------------------------------------------------------
 
-const _selfPath = new URL(import.meta.url).pathname;
+const _selfPath = fileURLToPath(import.meta.url);
 const _callerPath = process.argv[1] ? path.resolve(process.argv[1]) : null;
 const isMain = _callerPath === _selfPath || _callerPath === path.resolve(_selfPath);
 

@@ -69,12 +69,23 @@ test('install: init registers UserPromptSubmit hook in settings.json', () => {
     if (hookCommand) break;
   }
   assert.ok(hookCommand, 'should have extracted hook command');
-  // Command shape is: "node <path>" — strip the "node " prefix to get the full path
+  // Command shape is: "node '<path>'" — strip the "node " prefix and surrounding quotes
   // (can't split on space — real install paths may contain spaces)
   assert.ok(hookCommand.startsWith('node '), 'hook command should start with "node "');
-  const hookFilePath = hookCommand.slice('node '.length);
+  let hookFilePath = hookCommand.slice('node '.length);
+  if (hookFilePath.startsWith("'") && hookFilePath.endsWith("'")) {
+    hookFilePath = hookFilePath.slice(1, -1);
+  }
   assert.ok(hookFilePath, 'hook command should have a path token');
   assert.ok(existsSync(hookFilePath), `hook file must exist on disk at: ${hookFilePath}`);
+
+  // Shell-safety: if the path contains whitespace, the command must single-quote it
+  if (/\s/.test(hookFilePath)) {
+    assert.ok(
+      hookCommand.includes(`'${hookFilePath}'`),
+      `command must single-quote paths with spaces: ${hookCommand}`
+    );
+  }
 });
 
 test('install: init migrates legacy ~/.claude/.mcp.json entry', () => {
