@@ -5,6 +5,7 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
 import { expandPath } from '../src/utils.mjs';
 import { loadCatalog, saveCatalog, getCatalogStats } from '../src/catalog.mjs';
@@ -36,14 +37,17 @@ function red(s) { return `${C.red}${s}${C.reset}`; }
 // ---------------------------------------------------------------------------
 
 const HOME = os.homedir();
+const __filename = fileURLToPath(import.meta.url);
 const VAULT_DIR = path.join(HOME, '.claude', 'vault');
 const CONFIG_PATH = path.join(VAULT_DIR, 'config.yaml');
-const MCP_JSON_PATH = path.join(HOME, '.claude', '.mcp.json');
+const CLAUDE_JSON_PATH = path.join(HOME, '.claude.json');
+const LEGACY_MCP_JSON_PATH = path.join(HOME, '.claude', '.mcp.json');
+const SETTINGS_JSON_PATH = path.join(HOME, '.claude', 'settings.json');
 const CANDIDATES_DIR = path.join(VAULT_DIR, 'candidates');
 
 // Path to this package's server script
 const SERVER_MJS_PATH = path.resolve(
-  new URL(import.meta.url).pathname,
+  __filename,
   '../../src/server.mjs',
 );
 
@@ -60,18 +64,7 @@ function loadConfig() {
   }
 }
 
-function readMcpJson() {
-  try {
-    if (!fs.existsSync(MCP_JSON_PATH)) return {};
-    return JSON.parse(fs.readFileSync(MCP_JSON_PATH, 'utf8'));
-  } catch {
-    return {};
-  }
-}
-
-function writeMcpJson(data) {
-  fs.writeFileSync(MCP_JSON_PATH, JSON.stringify(data, null, 2), 'utf8');
-}
+// readMcpJson / writeMcpJson removed — v1.0 uses CLAUDE_JSON_PATH and LEGACY_MCP_JSON_PATH directly
 
 // ---------------------------------------------------------------------------
 // Command: init
@@ -90,7 +83,7 @@ async function cmdInit() {
 
   // 2. Copy template config.yaml if not present
   const templateConfigPath = path.resolve(
-    new URL(import.meta.url).pathname,
+    __filename,
     '../../templates/config.yaml',
   );
 
@@ -117,9 +110,16 @@ async function cmdInit() {
     console.log(dim('  exists ') + ' ~/.claude/vault/config.yaml');
   }
 
-  // 3. Detect integrations from .mcp.json
-  const mcpJson = readMcpJson();
-  const mcpKeys = Object.keys(mcpJson);
+  // 3. Detect integrations from ~/.claude.json mcpServers
+  let existingClaudeJson = {};
+  try {
+    if (fs.existsSync(CLAUDE_JSON_PATH)) {
+      existingClaudeJson = JSON.parse(fs.readFileSync(CLAUDE_JSON_PATH, 'utf8'));
+    }
+  } catch {
+    existingClaudeJson = {};
+  }
+  const mcpKeys = Object.keys(existingClaudeJson.mcpServers || {});
   const hasMempalace = mcpKeys.some(k => k.toLowerCase().includes('mempalace'));
   const hasCodebaseMemory = mcpKeys.some(
     k => k.toLowerCase().includes('codebase-memory') || k.toLowerCase().includes('codebase_memory'),
@@ -189,20 +189,73 @@ async function cmdInit() {
     catalog = null;
   }
 
-  // 6. Register in ~/.claude/.mcp.json (idempotent — skip if "vault" already present)
-  if (mcpJson.vault) {
-    console.log('\n' + dim('  .mcp.json already has "vault" entry — skipping registration'));
-  } else {
-    mcpJson.vault = {
-      command: 'node',
-      args: [SERVER_MJS_PATH, 'serve'],
-    };
-    try {
-      writeMcpJson(mcpJson);
-      console.log('\n' + green('  registered') + ' vault-mcp in ~/.claude/.mcp.json');
-    } catch (err) {
-      console.log('\n' + yellow('  warning: could not write .mcp.json: ') + err.message);
+  // 6A. Register in ~/.claude.json top-level mcpServers (idempotent)
+  try {
+    let claudeJson = {};
+    if (fs.existsSync(CLAUDE_JSON_PATH)) {
+      claudeJson = JSON.parse(fs.readFileSync(CLAUDE_JSON_PATH, 'utf8'));
     }
+    if (!claudeJson.mcpServers) claudeJson.mcpServers = {};
+    if (!claudeJson.mcpServers.vault) {
+      claudeJson.mcpServers.vault = {
+        command: 'node',
+        args: [SERVER_MJS_PATH, 'serve'],
+      };
+      fs.writeFileSync(CLAUDE_JSON_PATH, JSON.stringify(claudeJson, null, 2));
+      console.log('\n' + green('  registered') + ' vault in ~/.claude.json mcpServers');
+    } else {
+      console.log('\n' + dim('  vault already in ~/.claude.json mcpServers (skipped)'));
+    }
+  } catch (err) {
+    console.log('\n' + yellow('  warning: could not write ~/.claude.json: ') + err.message);
+  }
+
+  // 6B. Migrate legacy ~/.claude/.mcp.json entry if present
+  try {
+    if (fs.existsSync(LEGACY_MCP_JSON_PATH)) {
+      const legacyJson = JSON.parse(fs.readFileSync(LEGACY_MCP_JSON_PATH, 'utf8'));
+      if (legacyJson && legacyJson.vault) {
+        delete legacyJson.vault;
+        if (Object.keys(legacyJson).length === 0) {
+          fs.unlinkSync(LEGACY_MCP_JSON_PATH);
+          console.log(green('  removed') + ' legacy ~/.claude/.mcp.json (migrated to ~/.claude.json)');
+        } else {
+          fs.writeFileSync(LEGACY_MCP_JSON_PATH, JSON.stringify(legacyJson, null, 2));
+          console.log(green('  migrated') + ' vault from ~/.claude/.mcp.json to ~/.claude.json');
+        }
+      }
+    }
+  } catch (err) {
+    console.log(yellow('  warning: could not migrate legacy .mcp.json: ') + err.message);
+  }
+
+  // 6C. Register UserPromptSubmit hook in ~/.claude/settings.json (idempotent)
+  try {
+    const PROJECT_ROOT = path.resolve(__filename, '../..');
+    const HOOK_PATH = path.join(PROJECT_ROOT, 'integrations', 'vault-activation.cjs');
+
+    let settingsJson = {};
+    if (fs.existsSync(SETTINGS_JSON_PATH)) {
+      settingsJson = JSON.parse(fs.readFileSync(SETTINGS_JSON_PATH, 'utf8'));
+    }
+    if (!settingsJson.hooks) settingsJson.hooks = {};
+    if (!settingsJson.hooks.UserPromptSubmit) settingsJson.hooks.UserPromptSubmit = [];
+
+    const alreadyRegistered = settingsJson.hooks.UserPromptSubmit.some(
+      h => h.hooks && h.hooks.some(inner => inner.command && inner.command.includes('vault-activation.cjs'))
+    );
+    if (!alreadyRegistered) {
+      settingsJson.hooks.UserPromptSubmit.push({
+        matcher: '',
+        hooks: [{ type: 'command', command: `node ${HOOK_PATH}` }],
+      });
+      fs.writeFileSync(SETTINGS_JSON_PATH, JSON.stringify(settingsJson, null, 2));
+      console.log(green('  registered') + ' UserPromptSubmit hook in ~/.claude/settings.json');
+    } else {
+      console.log(dim('  UserPromptSubmit hook already registered (skipped)'));
+    }
+  } catch (err) {
+    console.log(yellow('  warning: could not write ~/.claude/settings.json: ') + err.message);
   }
 
   // Summary
@@ -435,6 +488,61 @@ function cmdForgeReject(id) {
 }
 
 // ---------------------------------------------------------------------------
+// Command: uninstall
+// ---------------------------------------------------------------------------
+
+async function cmdUninstall() {
+  console.log(bold('\nvault-mcp uninstall\n'));
+
+  // 1. Remove mcpServers.vault from ~/.claude.json
+  try {
+    if (fs.existsSync(CLAUDE_JSON_PATH)) {
+      const claudeJson = JSON.parse(fs.readFileSync(CLAUDE_JSON_PATH, 'utf8'));
+      if (claudeJson.mcpServers && claudeJson.mcpServers.vault) {
+        delete claudeJson.mcpServers.vault;
+        fs.writeFileSync(CLAUDE_JSON_PATH, JSON.stringify(claudeJson, null, 2));
+        console.log(green('  removed') + ' vault from ~/.claude.json mcpServers');
+      } else {
+        console.log(dim('  vault not found in ~/.claude.json mcpServers (skipped)'));
+      }
+    } else {
+      console.log(dim('  ~/.claude.json not found (skipped)'));
+    }
+  } catch (err) {
+    console.log(yellow('  warning: could not update ~/.claude.json: ') + err.message);
+  }
+
+  // 2. Remove UserPromptSubmit hook from ~/.claude/settings.json
+  try {
+    if (fs.existsSync(SETTINGS_JSON_PATH)) {
+      const settingsJson = JSON.parse(fs.readFileSync(SETTINGS_JSON_PATH, 'utf8'));
+      if (settingsJson.hooks && settingsJson.hooks.UserPromptSubmit) {
+        const before = settingsJson.hooks.UserPromptSubmit.length;
+        const filtered = settingsJson.hooks.UserPromptSubmit.filter(
+          h => !h.hooks || !h.hooks.some(inner => inner.command && inner.command.includes('vault-activation.cjs'))
+        );
+        if (filtered.length !== before) {
+          settingsJson.hooks.UserPromptSubmit = filtered;
+          if (filtered.length === 0) delete settingsJson.hooks.UserPromptSubmit;
+          fs.writeFileSync(SETTINGS_JSON_PATH, JSON.stringify(settingsJson, null, 2));
+          console.log(green('  removed') + ' UserPromptSubmit hook from ~/.claude/settings.json');
+        } else {
+          console.log(dim('  vault hook not found in settings.json (skipped)'));
+        }
+      }
+    } else {
+      console.log(dim('  ~/.claude/settings.json not found (skipped)'));
+    }
+  } catch (err) {
+    console.log(yellow('  warning: could not update ~/.claude/settings.json: ') + err.message);
+  }
+
+  // 3. Preserve ~/.claude/vault/ — user data, never delete
+  console.log('\nUninstall complete. ~/.claude/vault/ preserved (user data).');
+  console.log('To remove all data: rm -rf ~/.claude/vault/\n');
+}
+
+// ---------------------------------------------------------------------------
 // Help
 // ---------------------------------------------------------------------------
 
@@ -447,6 +555,7 @@ ${bold('USAGE')}
 
 ${bold('COMMANDS')}
   ${cyan('init')}                   Initialize vault structure, run scan, register MCP
+  ${cyan('uninstall')}              Remove vault-mcp hooks and mcpServers entry (preserves ~/.claude/vault/)
   ${cyan('scan')}                   Full scan of configured directories
   ${cyan('scan --stats')}           Show catalog statistics without rescanning
   ${cyan('scan --quick')}           Quick scan (same as full scan for now)
@@ -477,6 +586,10 @@ const rest = args.slice(1);
     switch (cmd) {
       case 'init':
         await cmdInit();
+        break;
+
+      case 'uninstall':
+        await cmdUninstall();
         break;
 
       case 'scan':

@@ -1,6 +1,6 @@
 {
   "name": "@felipevdc1/vault-mcp",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "Intelligent skill resolver for Claude Code — discover, compose, and evolve your AI toolkit.",
   "type": "module",
   "main": "src/server.mjs",
@@ -11,7 +11,7 @@
     "start": "node src/server.mjs",
     "serve": "node bin/vault-mcp.mjs serve",
     "scan": "node bin/vault-mcp.mjs scan",
-    "test": "node --test tests/"
+    "test": "node --test tests/*.mjs"
   },
   "author": {
     "name": "Felipe Vieira Domingues Carneiro",
@@ -43,6 +43,7 @@
   "homepage": "https://github.com/felipevdc1/vault-mcp#readme",
   "files": [
     "bin/",
+    "integrations/",
     "src/",
     "templates/",
     "README.md",

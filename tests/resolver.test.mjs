@@ -1,5 +1,8 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { homedir } from 'node:os';
 
 import {
   extractKeywords,
@@ -7,6 +10,16 @@ import {
   resolve,
   search,
 } from '../src/resolver.mjs';
+
+// Load real catalog for v1.0 regression tests
+function loadRealCatalog() {
+  try {
+    const catalogPath = join(homedir(), '.claude', 'vault', 'catalog.json');
+    return JSON.parse(readFileSync(catalogPath, 'utf8'));
+  } catch {
+    return null;
+  }
+}
 
 // Minimal fake catalog used across multiple tests
 const fakeCatalog = {
@@ -88,5 +101,35 @@ describe('resolver', () => {
     assert.ok(result.results.every(r => r.type === 'agent'), 'all results should be type=agent');
     assert.equal(result.results.length, 1);
     assert.equal(result.results[0].id, 'design:agent:alpha');
+  });
+});
+
+describe('v1.0 regressions (real catalog)', () => {
+  test('v1.0 regression: instagram carrossel does not return develop-exploit', () => {
+    const catalog = loadRealCatalog();
+    if (!catalog) return; // skip if catalog unavailable
+    const r = resolve(catalog, 'criar carrossel instagram teaser lançamento produto dev tool consulting pt-br');
+    const ids = r.matches.map(m => m.id);
+    assert.ok(!ids.some(id => id.includes('develop-exploit')), `develop-exploit in top: ${JSON.stringify(ids)}`);
+    assert.ok(!ids.some(id => id.includes('discover-tools')), `discover-tools in top: ${JSON.stringify(ids)}`);
+  });
+
+  test('v1.0 regression: instagram carrossel returns design/copywriter squad match', () => {
+    const catalog = loadRealCatalog();
+    if (!catalog) return; // skip if catalog unavailable
+    const r = resolve(catalog, 'criar carrossel instagram teaser lançamento');
+    const relevant = r.matches.filter(m =>
+      ['design', 'copywriter-os', 'marketing-squad', 'aryse-marketing', 'instagram'].some(s => m.squad === s),
+    );
+    assert.ok(relevant.length >= 1, `no design/copy squad matches: ${JSON.stringify(r.matches.map(m => m.id))}`);
+  });
+
+  test('v1.0 regression: dedup by asset id in top matches', () => {
+    const catalog = loadRealCatalog();
+    if (!catalog) return; // skip if catalog unavailable
+    const r = resolve(catalog, 'develop');
+    const ids = r.matches.map(m => m.id);
+    const unique = new Set(ids);
+    assert.strictEqual(ids.length, unique.size, `duplicate ids in top: ${ids.join(',')}`);
   });
 });

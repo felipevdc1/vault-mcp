@@ -1,7 +1,7 @@
 <h1 align="center">vault-mcp</h1>
 
 <p align="center">
-  <strong>Your Claude Code skills, organized. Your Claude, smarter.</strong>
+  <strong>Claude Code didn't use your 2,697 skills. Now it does.</strong>
 </p>
 
 <p align="center">
@@ -13,46 +13,19 @@
 </p>
 
 <p align="center">
-  An MCP server that automatically resolves which Claude Code skill to use for each task —<br>
-  and gets smarter the more you use it.
+  vault-mcp v1.0 is an <strong>activation layer</strong> for Claude Code. It watches your user messages<br>
+  and injects matching skills from your vault <strong>before Claude responds</strong> — automatically.
 </p>
 
 ---
 
-## The Problem
+## The Problem v1.0 Solves
 
-You installed dozens of Claude Code skills. Every session, all of them load into your system prompt.
-You forget which skill does what. You pick the wrong one — or worse, you skip them entirely because
-finding the right one takes longer than just doing the thing yourself.
+Before v1.0: vault-mcp was a queryable index. You had to call `vault_resolve` explicitly. Claude almost never did.
 
-Your tooling became friction.
+v1.0 flips the polarity: a `UserPromptSubmit` hook runs `vault_resolve` automatically on every message and injects the top matches as `<vault-activation>` context. Claude sees the right tools before it starts thinking.
 
----
-
-## The Magic
-
-You ask Claude to build something. Behind the scenes:
-
-```
-You: "build a landing page for the AI course"
-
-Claude → vault_resolve({ task: "landing page for AI course" })
-
-Vault ← {
-  recipe: "Landing Page de Alta Conversão",
-  skills: [
-    "design:agents:refactoring-ui",      // visual hierarchy & spacing
-    "ClaudeKit-marketing:copy:formula",  // AIDA/PAS/BAB copy structures
-    "ClaudeKit-marketing:seo:keywords",  // meta tags & keyword targeting
-    "design:tasks:a11y-audit"            // accessibility post-build
-  ],
-  workflow: "1. Copy → 2. Design → 3. SEO → 4. A11y"
-}
-
-Claude loads the skills, runs the workflow, ships the page.
-```
-
-You never thought about which skills to use. The vault did it for you.
+Install once. Every session after, Claude starts pre-armed.
 
 ---
 
@@ -62,7 +35,22 @@ You never thought about which skills to use. The vault did it for you.
 npx @felipevdc1/vault-mcp init
 ```
 
-That's it. 30 seconds. Restart Claude Code — done.
+This writes three things atomically:
+- `~/.claude.json` — registers the MCP server (`mcpServers.vault`)
+- `~/.claude/settings.json` — registers the `UserPromptSubmit` hook
+- `~/.claude/vault/` — catalog, config, and templates
+
+Restart Claude Code. Done.
+
+**Upgrading from v0.2?** Re-run `init` — it detects the legacy `~/.claude/.mcp.json` entry, migrates it, and registers the hook. Idempotent. See [docs/UPGRADE.md](./docs/UPGRADE.md).
+
+**To uninstall:**
+
+```bash
+npx @felipevdc1/vault-mcp uninstall
+```
+
+Removes the hook and `mcpServers.vault` entry. Preserves your `~/.claude/vault/` data.
 
 ---
 
@@ -125,15 +113,13 @@ Every skill gets a **manifest** — structured metadata Claude uses to score rel
 npx @felipevdc1/vault-mcp init
 ```
 
-The `init` command:
+The `init` command does three things atomically:
 
-1. Scans your Claude Code skills directory
-2. Detects integrations (MemPalace, codebase-memory-mcp)
-3. Generates `catalog.json` with all assets indexed
-4. Registers the MCP server in `~/.claude/.mcp.json`
-5. Sets up project profiles and recipes
+1. Scans your Claude Code skills directory and generates `~/.claude/vault/catalog.json`
+2. Registers the MCP server in `~/.claude.json` under `mcpServers.vault`
+3. Registers the `UserPromptSubmit` hook in `~/.claude/settings.json`
 
-Restart Claude Code to activate the vault tools.
+Restart Claude Code to activate the vault tools and the activation hook.
 
 📚 **Full installation guide**: [docs/INSTALLATION.md](./docs/INSTALLATION.md)
 
@@ -172,9 +158,9 @@ Not installed? Vault auto-detects what's missing and tells you.
 
 - [x] v0.1 — Core engine: scanner, resolver, loader
 - [x] v0.2 — Manifests, recipes, profiles, forge, dashboard
-- [ ] v0.3 — Semantic search via embeddings
-- [ ] v0.4 — Community recipe marketplace
-- [ ] v1.0 — Native Claude Code plugin integration
+- [x] v1.0 — Activation layer: UserPromptSubmit hook, resolver fixes, correct install path
+- [ ] v1.1 — Semantic search via embeddings, Forge tool, global profiles
+- [ ] v1.2 — Community recipe marketplace
 
 ---
 

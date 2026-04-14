@@ -87,9 +87,9 @@ export function scoreAsset(asset, keywords, options = {}) {
     .join(' ')
     .toLowerCase();
 
-  // --- Tag score: +5 per matching tag ---
+  // --- Tag score: +5 per matching tag (word-boundary matching) ---
   for (const kw of keywords) {
-    if (assetTags.some(tag => tag === kw || tag.includes(kw) || kw.includes(tag))) {
+    if (assetTags.some(tag => tag === kw || tag.startsWith(kw + '-') || tag.endsWith('-' + kw) || tag.includes('-' + kw + '-'))) {
       score += 5;
     }
   }
@@ -98,7 +98,11 @@ export function scoreAsset(asset, keywords, options = {}) {
   for (const kw of keywords) {
     if (assetName === kw) {
       score += 10;
-    } else if (assetName.includes(kw) || kw.includes(assetName)) {
+    } else if (
+      assetName.startsWith(kw + '-') ||
+      assetName.endsWith('-' + kw) ||
+      assetName.includes('-' + kw + '-')
+    ) {
       score += 7;
     }
   }
@@ -169,26 +173,26 @@ function findBestRecipe(recipes, keywords) {
     return null;
   }
 
-  let bestRecipe = null;
+  let best = null;
   let bestScore = 0;
 
   for (const recipe of recipes) {
-    const recipeText = `${recipe.name || ''} ${recipe.what || ''}`.toLowerCase();
-    const recipeKeywords = extractKeywords(recipeText);
+    let score = 0;
+    const recipeTags = Array.isArray(recipe.tags) ? recipe.tags.map(t => t.toLowerCase()) : [];
+    const recipeText = `${recipe.name || ''} ${recipe.what || recipe.description || ''}`.toLowerCase();
 
-    let recipeScore = 0;
     for (const kw of keywords) {
-      if (recipeKeywords.includes(kw)) recipeScore += 5;
-      else if (recipeText.includes(kw)) recipeScore += 3;
+      if (recipeTags.some(tag => tag === kw || tag.startsWith(kw + '-') || tag.endsWith('-' + kw))) score += 5;
+      if (recipeText.includes(kw)) score += 2;
     }
 
-    if (recipeScore >= 5 && recipeScore > bestScore) {
-      bestScore = recipeScore;
-      bestRecipe = recipe;
+    if (score >= 5 && score > bestScore) {
+      best = recipe;
+      bestScore = score;
     }
   }
 
-  return bestRecipe;
+  return best;
 }
 
 // ---------------------------------------------------------------------------
@@ -232,16 +236,24 @@ export function resolve(catalog, task, options = {}) {
   }
 
   // Score every asset
-  const scored = catalog.assets
+  const sortedMatches = catalog.assets
     .map(asset => ({
       asset,
       score: scoreAsset(asset, keywords, { usageData, projectDomains, recipes }),
     }))
     .filter(({ score }) => score >= 5)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit);
+    .sort((a, b) => b.score - a.score);
 
-  const matches = scored.map(({ asset, score }) => ({
+  // Dedup by asset.id, keeping highest score
+  const dedupMap = new Map();
+  for (const match of sortedMatches) {
+    const existing = dedupMap.get(match.asset.id);
+    if (!existing || match.score > existing.score) dedupMap.set(match.asset.id, match);
+  }
+  const deduped = [...dedupMap.values()].sort((a, b) => b.score - a.score);
+  const topMatches = deduped.slice(0, limit);
+
+  const matches = topMatches.map(({ asset, score }) => ({
     id: asset.id,
     score,
     summary: asset.summary || {},
